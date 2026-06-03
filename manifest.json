@@ -1,0 +1,66 @@
+{
+  "name": "ZOOM CLEAN Pro - نظام إدارة المخازن والمبيعات",
+  "short_name": "ZOOM CLEAN Pro",
+  "description": "نظام ERP و POS متكامل لإدارة المخازن والمبيعات والديون",
+  "start_url": "/pos.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='48' fill='%232563eb'/%3E%3Ctext x='96' y='110' font-family='Arial' font-size='80' font-weight='bold' text-anchor='middle' fill='white'%3EZ%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%232563eb'/%3E%3Ctext x='256' y='300' font-family='Arial' font-size='220' font-weight='bold' text-anchor='middle' fill='white'%3EZ%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "نقطة البيع",
+      "short_name": "POS",
+      "description": "فتح نقطة البيع",
+      "url": "/pos.html",
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' rx='24' fill='%232563eb'/%3E%3Ctext x='48' y='60' font-size='40' text-anchor='middle' fill='white'%3E🛒%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+    },
+    {
+      "name": "المخزون",
+      "short_name": "المخزون",
+      "description": "فتح صفحة المخزون",
+      "url": "/inventory.html",
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' rx='24' fill='%2316a34a'/%3E%3Ctext x='48' y='60' font-size='40' text-anchor='middle' fill='white'%3E📦%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+    },
+    {
+      "name": "الديون",
+      "short_name": "الديون",
+      "description": "فتح سجل الديون",
+      "url": "/debt.html",
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' rx='24' fill='%23dc2626'/%3E%3Ctext x='48' y='60' font-size='40' text-anchor='middle' fill='white'%3E💰%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720'%3E%3Crect width='1280' height='720' fill='%23f8fafc'/%3E%3Ctext x='640' y='360' font-size='60' text-anchor='middle' fill='%232563eb'%3EZOOM CLEAN Pro%3C/text%3E%3C/svg%3E",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "لوحة التحكم"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='750' height='1334'%3E%3Crect width='750' height='1334' fill='%23f8fafc'/%3E%3Ctext x='375' y='667' font-size='50' text-anchor='middle' fill='%232563eb'%3EZOOM CLEAN Pro%3C/text%3E%3C/svg%3E",
+      "sizes": "750x1334",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "تطبيق الجوال"
+    }
+  ]
+}

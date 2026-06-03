@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ZOOM CLEAN Pro">
+    <meta name="theme-color" content="#16a34a">
+    <title>المخزون - ZOOM CLEAN Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='48' fill='%2316a34a'/%3E%3Ctext x='96' y='110' font-family='Arial' font-size='80' font-weight='bold' text-anchor='middle' fill='white'%3EZ%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; overflow-x: hidden; overscroll-behavior-y: none; }
+        .glass { background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.5); }
+        .card-shadow { box-shadow: 0 4px 24px -4px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); }
+        .hover-lift { transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s; }
+        .hover-lift:active { transform: scale(0.97); }
+        .neon-glow-green { box-shadow: 0 0 20px rgba(74,222,128,0.3); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .input-no-zoom { font-size: 16px; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .bottom-nav-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .nav-active { color: #16a34a !important; }
+        .nav-active div { background: rgba(22,163,74,0.15) !important; }
+        .syncing { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .safe-top { padding-top: env(safe-area-inset-top, 0); }
+        .btn-touch { min-height: 44px; min-width: 44px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+        .btn-touch:active { transform: scale(0.95); opacity: 0.9; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Install Banner -->
+    <div id="installBanner" class="hidden fixed top-0 left-0 right-0 z-[80] bg-green-600 text-white px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-download"></i>
+            <span class="text-sm font-bold">ثبت التطبيق على شاشتك الرئيسية</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btnInstall" class="bg-white text-green-600 px-4 py-1.5 rounded-xl text-sm font-bold btn-touch">تثبيت</button>
+            <button id="btnDismissInstall" class="text-white/80 px-2 btn-touch"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass px-4 py-3 lg:px-8 safe-top">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg">
+                    <i class="fas fa-warehouse text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-800 leading-tight">المخزون</h1>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-slate-500 font-medium">إدارة المنتجات والنواقص</p>
+                        <span id="syncStatus" class="text-[10px] text-green-500 font-bold hidden"><i class="fas fa-wifi"></i> متصل</span>
+                        <span id="offlineStatus" class="text-[10px] text-orange-500 font-bold hidden"><i class="fas fa-wifi-slash"></i> غير متصل</span>
+                    </div>
+                </div>
+            </div>
+            <button id="btnAddProduct" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2.5 rounded-2xl font-bold text-sm hover-lift shadow-lg shadow-green-200 flex items-center gap-2 btn-touch">
+                <i class="fas fa-plus"></i> منتج جديد
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-4 lg:p-8 pb-32 lg:pb-8 max-w-6xl mx-auto space-y-4">
+
+        <!-- Live Inventory Value -->
+        <div class="glass rounded-[2rem] p-5 lg:p-6 card-shadow border-2 border-green-400/10 neon-glow-green">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-green-600 uppercase tracking-wider">قيمة المخزون الحية</span>
+                </div>
+                <span class="text-[10px] font-bold text-green-600">LIVE</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span id="inventoryValue" class="text-4xl lg:text-5xl font-black text-green-600">0</span>
+                <span class="text-sm font-bold text-green-500">ج.م</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">إجمالي قيمة البضاعة على الرفوف الآن</p>
+        </div>
+
+        <!-- Search -->
+        <div class="glass rounded-[2rem] p-4 card-shadow">
+            <div class="relative">
+                <input type="text" id="inventorySearch" 
+                    class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 pr-12 text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all input-no-zoom"
+                    placeholder="ابحث في المخزون...">
+                <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none"></i>
+            </div>
+        </div>
+
+        <!-- Inventory List -->
+        <div class="glass rounded-[2rem] p-4 lg:p-6 card-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-boxes text-green-500"></i> قائمة المنتجات
+                </h2>
+                <span id="inventoryCount" class="bg-green-100 text-green-700 px-2.5 py-1 rounded-xl text-xs font-bold">0</span>
+            </div>
+            <div id="inventoryList" class="space-y-2 max-h-[60vh] overflow-y-auto scrollbar-hide">
+                <!-- Dynamic -->
+            </div>
+        </div>
+
+        <!-- Needs & Shortages -->
+        <div class="glass rounded-[2rem] p-4 lg:p-6 card-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-clipboard-list text-orange-500"></i> احتياجات ونواقص
+                </h2>
+                <span id="needsCount" class="bg-orange-100 text-orange-700 px-2.5 py-1 rounded-xl text-xs font-bold">0</span>
+            </div>
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="needInput" placeholder="أضف عنصر مطلوب..." 
+                    class="flex-1 bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition input-no-zoom">
+                <button id="btnAddNeed" class="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl px-4 py-2.5 font-bold text-sm hover-lift transition shadow-lg shadow-orange-200 btn-touch">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="needsList" class="space-y-1.5 max-h-48 overflow-y-auto scrollbar-hide">
+                <!-- Dynamic -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 glass bottom-nav-safe px-6 py-3 border-t border-slate-200/50">
+        <div class="flex items-center justify-around max-w-lg mx-auto">
+            <a href="pos.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="pos">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-shopping-cart text-lg"></i></div>
+                <span class="text-[10px] font-bold">البيع</span>
+            </a>
+            <a href="inventory.html" class="nav-item flex flex-col items-center gap-1 nav-active btn-touch" data-nav="inventory">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-boxes text-lg"></i></div>
+                <span class="text-[10px] font-bold">المخزون</span>
+            </a>
+            <a href="debt.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="debt">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-hand-holding-usd text-lg"></i></div>
+                <span class="text-[10px] font-bold">الديون</span>
+            </a>
+            <a href="finance.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="finance">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-chart-line text-lg"></i></div>
+                <span class="text-[10px] font-bold">المالية</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="hidden fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white w-full lg:w-[420px] lg:rounded-[2rem] rounded-t-[2rem] p-6 animate-fade-in shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-bold text-lg text-slate-800">إضافة منتج جديد</h3>
+                <button id="btnCloseAddProduct" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 btn-touch"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">اسم المنتج</label>
+                    <input type="text" id="newProductName" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-green-500 transition input-no-zoom">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-1 block">الباركود</label>
+                        <input type="text" id="newProductBarcode" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-green-500 transition input-no-zoom">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-1 block">السعر (ج.م)</label>
+                        <input type="number" id="newProductPrice" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-green-500 transition input-no-zoom">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">الكمية في المخزن</label>
+                    <input type="number" id="newProductStock" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-green-500 transition input-no-zoom" value="0">
+                </div>
+                <button id="btnSaveProduct" class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-4 rounded-2xl shadow-lg hover-lift transition mt-2 btn-touch">
+                    <i class="fas fa-save mr-2"></i> حفظ المنتج
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="hidden fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white w-full lg:w-[420px] lg:rounded-[2rem] rounded-t-[2rem] p-6 animate-fade-in shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-bold text-lg text-slate-800">تعديل المنتج</h3>
+                <button id="btnCloseEditProduct" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 btn-touch"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="editProductId">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">اسم المنتج</label>
+                    <input type="text" id="editProductName" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-blue-500 transition input-no-zoom">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-1 block">الباركود</label>
+                        <input type="text" id="editProductBarcode" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-blue-500 transition input-no-zoom">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 mb-1 block">السعر (ج.م)</label>
+                        <input type="number" id="editProductPrice" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-500 transition input-no-zoom">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">الكمية في المخزن</label>
+                    <input type="number" id="editProductStock" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-500 transition input-no-zoom">
+                </div>
+                <button id="btnSaveEdit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg hover-lift transition mt-2 btn-touch">
+                    <i class="fas fa-save mr-2"></i> حفظ التعديلات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-[70] bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 animate-fade-in">
+        <i id="toastIcon" class="fas fa-check-circle text-green-400"></i>
+        <span id="toastMessage">تم بنجاح!</span>
+    </div>
+
+    <!-- PWA Scripts -->
+    <script>
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            setTimeout(() => {
+                if (!localStorage.getItem('pwa_dismissed')) {
+                    document.getElementById('installBanner').classList.remove('hidden');
+                }
+            }, 3000);
+        });
+        document.getElementById('btnInstall').addEventListener('click', function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') showToast('تم تثبيت التطبيق!');
+                    deferredPrompt = null;
+                    document.getElementById('installBanner').classList.add('hidden');
+                });
+            } else {
+                showToast('اضغط على زر المشاركة ثم "إضافة إلى الشاشة الرئيسية"', 'info');
+            }
+        });
+        document.getElementById('btnDismissInstall').addEventListener('click', function() {
+            localStorage.setItem('pwa_dismissed', 'true');
+            document.getElementById('installBanner').classList.add('hidden');
+        });
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then((reg) => console.log('SW registered:', reg.scope))
+                    .catch((err) => console.log('SW failed:', err));
+            });
+        }
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = this.getAttribute('href');
+            });
+        });
+    </script>
+
+    <!-- Firebase SDK v10.7.1 Module -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, get, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCArpnKK4qsM8B3ds5iW-JAYb_DWml_xUk",
+            authDomain: "zoomclean-144b6.firebaseapp.com",
+            databaseURL: "https://zoomclean-144b6-default-rtdb.firebaseio.com",
+            projectId: "zoomclean-144b6",
+            storageBucket: "zoomclean-144b6.firebasestorage.app",
+            messagingSenderId: "521673315417",
+            appId: "1:521673315417:web:90ec0cc4eb19295b048d48",
+            measurementId: "G-HG01XQTFEV"
+        };
+
+        let app, db;
+        let firebaseConnected = false;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            console.log('Firebase initialized successfully');
+        } catch (err) {
+            console.error('Firebase init error:', err);
+            showToast('خطأ في الاتصال بـ Firebase', 'error');
+        }
+
+        // ==================== DATA STORE ====================
+        let store = { products: [], cart: [], expenses: [], needs: [], debtors: [], dailySales: 0, dailyExpenses: 0 };
+
+        function loadLocalStore() {
+            const saved = localStorage.getItem('zoomclean_store');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.expenses) data.expenses.forEach(e => { if (e.date) e.date = new Date(e.date); });
+                    if (data.debtors) data.debtors.forEach(d => { 
+                        if (d.history) d.history.forEach(h => { if (h.date) h.date = new Date(h.date); }); 
+                    });
+                    return data;
+                } catch (e) { console.error('LocalStorage parse error:', e); }
+            }
+            return {
+                products: [
+                    { id: 1, name: "كلوركس 1 لتر", barcode: "1234567890123", price: 25, stock: 45 },
+                    { id: 2, name: "صابون لوكس 125g", barcode: "1234567890124", price: 12, stock: 120 },
+                    { id: 3, name: "منظف زجاج 500ml", barcode: "1234567890125", price: 18, stock: 30 },
+                    { id: 4, name: "معطر جو", barcode: "1234567890126", price: 35, stock: 22 },
+                    { id: 5, name: "مسحوق غسيل 2kg", barcode: "1234567890127", price: 85, stock: 15 },
+                    { id: 6, name: "سائل جلي 1 لتر", barcode: "1234567890128", price: 22, stock: 50 },
+                    { id: 7, name: "ورق تواليت", barcode: "1234567890129", price: 45, stock: 60 },
+                    { id: 8, name: "منظف أرضيات", barcode: "1234567890130", price: 28, stock: 40 },
+                ],
+                cart: [], expenses: [], needs: [], debtors: [], dailySales: 0, dailyExpenses: 0,
+            };
+        }
+
+        function saveLocalStore() { 
+            try {
+                localStorage.setItem('zoomclean_store', JSON.stringify(store)); 
+            } catch (e) { console.error('LocalStorage save error:', e); }
+        }
+
+        // ==================== FIREBASE SYNC ====================
+        function syncToFirebase() {
+            if (!db || !firebaseConnected) {
+                console.log('Firebase not connected, saving locally only');
+                saveLocalStore();
+                return;
+            }
+            const data = {
+                products: store.products,
+                expenses: store.expenses,
+                needs: store.needs,
+                debtors: store.debtors,
+                dailySales: store.dailySales,
+                dailyExpenses: store.dailyExpenses,
+                lastUpdated: new Date().toISOString()
+            };
+            set(ref(db, 'zoomclean'), data)
+                .then(() => { console.log('Synced to Firebase'); showSyncStatus(); })
+                .catch(err => { 
+                    console.error('Sync error:', err); 
+                    saveLocalStore();
+                    showOfflineStatus();
+                });
+        }
+
+        function showSyncStatus() {
+            const status = document.getElementById('syncStatus');
+            const offline = document.getElementById('offlineStatus');
+            if (status) {
+                status.classList.remove('hidden');
+                status.classList.add('syncing');
+                setTimeout(() => status.classList.remove('syncing'), 2000);
+            }
+            if (offline) offline.classList.add('hidden');
+            firebaseConnected = true;
+        }
+
+        function showOfflineStatus() {
+            const status = document.getElementById('syncStatus');
+            const offline = document.getElementById('offlineStatus');
+            if (status) status.classList.add('hidden');
+            if (offline) offline.classList.remove('hidden');
+            firebaseConnected = false;
+        }
+
+        function initFirebaseListeners() {
+            if (!db) {
+                console.log('No Firebase DB, using local only');
+                store = loadLocalStore();
+                renderInventory();
+                renderNeeds();
+                updateInventoryValue();
+                showOfflineStatus();
+                return;
+            }
+
+            // Test connection
+            const connectedRef = ref(db, '.info/connected');
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    console.log('Firebase connected');
+                    showSyncStatus();
+                } else {
+                    console.log('Firebase disconnected');
+                    showOfflineStatus();
+                }
+            });
+
+            onValue(ref(db, 'zoomclean/products'), (snapshot) => {
+                if (snapshot.exists()) {
+                    store.products = snapshot.val();
+                    renderInventory();
+                    updateInventoryValue();
+                    showSyncStatus();
+                }
+            }, (error) => {
+                console.error('Products listener error:', error);
+                showOfflineStatus();
+            });
+
+            onValue(ref(db, 'zoomclean/needs'), (snapshot) => {
+                if (snapshot.exists()) {
+                    store.needs = snapshot.val();
+                    renderNeeds();
+                }
+            });
+
+            get(ref(db, 'zoomclean')).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    store.products = data.products || store.products;
+                    store.needs = data.needs || [];
+                    store.expenses = data.expenses || [];
+                    store.debtors = data.debtors || [];
+                    store.dailySales = data.dailySales || 0;
+                    store.dailyExpenses = data.dailyExpenses || 0;
+                    if (store.expenses) store.expenses.forEach(e => { if (e.date) e.date = new Date(e.date); });
+                    if (store.debtors) store.debtors.forEach(d => { 
+                        if (d.history) d.history.forEach(h => { if (h.date) h.date = new Date(h.date); }); 
+                    });
+                    renderInventory(); updateInventoryValue(); renderNeeds(); showSyncStatus();
+                } else {
+                    store = loadLocalStore();
+                    syncToFirebase();
+                    renderInventory(); updateInventoryValue(); renderNeeds();
+                }
+            }).catch(() => {
+                store = loadLocalStore();
+                renderInventory(); updateInventoryValue(); renderNeeds();
+                showOfflineStatus();
+                showToast('وضع عدم الاتصال - البيانات محلية', 'info');
+            });
+        }
+
+        // ==================== INVENTORY VALUE ====================
+        function updateInventoryValue() {
+            const value = store.products.reduce((sum, p) => sum + (p.price * p.stock), 0);
+            const el = document.getElementById('inventoryValue');
+            if (el) el.textContent = value.toLocaleString();
+        }
+
+        // ==================== INVENTORY LIST ====================
+        function renderInventory(productsToShow = null) {
+            const container = document.getElementById('inventoryList');
+            const products = productsToShow || store.products;
+            const count = document.getElementById('inventoryCount');
+            if (count) count.textContent = products.length;
+            if (products.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-400"><i class="fas fa-box-open text-3xl mb-2 opacity-50"></i><p class="text-sm">لا توجد منتجات</p></div>`;
+                return;
+            }
+            container.innerHTML = products.map(p => {
+                const stockClass = p.stock <= 10 ? 'text-red-500 bg-red-50' : p.stock <= 25 ? 'text-orange-500 bg-orange-50' : 'text-green-600 bg-green-50';
+                return `
+                    <div class="inventory-item flex items-center gap-3 bg-white rounded-xl p-4 card-shadow border border-slate-100 hover:border-green-200 transition group animate-fade-in" data-product-id="${p.id}">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <p class="font-bold text-slate-800 text-sm truncate">${p.name}</p>
+                                <span class="${stockClass} px-2 py-0.5 rounded-lg text-[10px] font-bold">${p.stock}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 font-mono">${p.barcode}</p>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-bold text-green-600 text-lg">${p.price}</p>
+                            <p class="text-[10px] text-slate-400">ج.م</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button class="btn-edit w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition btn-touch" data-product-id="${p.id}">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button class="btn-delete w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100 transition btn-touch" data-product-id="${p.id}">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openEditProduct(parseInt(this.getAttribute('data-product-id')));
+                });
+            });
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    deleteProduct(parseInt(this.getAttribute('data-product-id')));
+                });
+            });
+        }
+
+        function filterInventory() {
+            const query = document.getElementById('inventorySearch').value.trim().toLowerCase();
+            if (!query) { renderInventory(); return; }
+            const matches = store.products.filter(p => p.name.toLowerCase().includes(query) || p.barcode.includes(query));
+            renderInventory(matches);
+        }
+
+        function deleteProduct(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+            store.products = store.products.filter(p => p.id !== id);
+            renderInventory(); updateInventoryValue(); saveLocalStore(); syncToFirebase();
+            showToast('تم حذف المنتج');
+        }
+
+        // ==================== ADD PRODUCT ====================
+        function openAddProductModal() {
+            document.getElementById('addProductModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('newProductName').focus(), 300);
+        }
+        function saveNewProduct() {
+            const name = document.getElementById('newProductName').value.trim();
+            const barcode = document.getElementById('newProductBarcode').value.trim();
+            const price = parseFloat(document.getElementById('newProductPrice').value);
+            const stock = parseInt(document.getElementById('newProductStock').value) || 0;
+            if (!name || !barcode || !price) { showToast('أكمل جميع البيانات!', 'error'); return; }
+            if (store.products.find(p => p.barcode === barcode)) { showToast('هذا الباركود مستخدم!', 'error'); return; }
+            const newId = store.products.length > 0 ? Math.max(...store.products.map(p => p.id)) + 1 : 1;
+            store.products.push({ id: newId, name, barcode, price, stock });
+            document.getElementById('newProductName').value = '';
+            document.getElementById('newProductBarcode').value = '';
+            document.getElementById('newProductPrice').value = '';
+            document.getElementById('newProductStock').value = '0';
+            closeModal('addProductModal');
+            renderInventory(); updateInventoryValue(); saveLocalStore(); syncToFirebase();
+            showToast('تم إضافة المنتج بنجاح!');
+        }
+
+        // ==================== EDIT PRODUCT ====================
+        let editingProductId = null;
+        function openEditProduct(id) {
+            const p = store.products.find(x => x.id === id);
+            if (!p) return;
+            editingProductId = id;
+            document.getElementById('editProductId').value = id;
+            document.getElementById('editProductName').value = p.name;
+            document.getElementById('editProductBarcode').value = p.barcode;
+            document.getElementById('editProductPrice').value = p.price;
+            document.getElementById('editProductStock').value = p.stock;
+            document.getElementById('editProductModal').classList.remove('hidden');
+        }
+        function saveEditProduct() {
+            const p = store.products.find(x => x.id === editingProductId);
+            if (!p) return;
+            const name = document.getElementById('editProductName').value.trim();
+            const barcode = document.getElementById('editProductBarcode').value.trim();
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const stock = parseInt(document.getElementById('editProductStock').value) || 0;
+            if (!name || !barcode || !price) { showToast('أكمل جميع البيانات!', 'error'); return; }
+            const duplicate = store.products.find(x => x.barcode === barcode && x.id !== editingProductId);
+            if (duplicate) { showToast('هذا الباركود مستخدم!', 'error'); return; }
+            p.name = name; p.barcode = barcode; p.price = price; p.stock = stock;
+            closeModal('editProductModal');
+            renderInventory(); updateInventoryValue(); saveLocalStore(); syncToFirebase();
+            showToast('تم تعديل المنتج بنجاح!');
+        }
+
+        // ==================== NEEDS ====================
+        function addNeed() {
+            const input = document.getElementById('needInput');
+            const text = input.value.trim();
+            if (!text) return;
+            store.needs.push({ id: Date.now(), text, done: false });
+            input.value = ''; renderNeeds(); saveLocalStore(); syncToFirebase();
+            showToast('تمت الإضافة');
+        }
+        function toggleNeed(id) {
+            const need = store.needs.find(n => n.id === id);
+            if (need) need.done = !need.done;
+            renderNeeds(); saveLocalStore(); syncToFirebase();
+        }
+        function deleteNeed(id) {
+            store.needs = store.needs.filter(n => n.id !== id);
+            renderNeeds(); saveLocalStore(); syncToFirebase();
+        }
+        function renderNeeds() {
+            const container = document.getElementById('needsList');
+            const count = document.getElementById('needsCount');
+            const active = store.needs.filter(n => !n.done).length;
+            if (count) count.textContent = active;
+            if (store.needs.length === 0) { container.innerHTML = `<p class="text-center text-slate-400 text-xs py-2">لا توجد احتياجات</p>`; return; }
+            container.innerHTML = store.needs.map(n => `
+                <div class="need-item flex items-center gap-2 bg-orange-50 rounded-xl p-2.5 ${n.done ? 'opacity-50' : ''}" data-need-id="${n.id}">
+                    <button class="btn-toggle-need w-6 h-6 rounded-lg border-2 ${n.done ? 'bg-green-500 border-green-500' : 'border-orange-300'} flex items-center justify-center transition flex-shrink-0 btn-touch" data-need-id="${n.id}">
+                        ${n.done ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
+                    </button>
+                    <span class="flex-1 text-sm font-semibold ${n.done ? 'line-through text-slate-400' : 'text-slate-700'}">${n.text}</span>
+                    <button class="btn-delete-need w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 transition btn-touch" data-need-id="${n.id}">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.btn-toggle-need').forEach(btn => {
+                btn.addEventListener('click', function() { toggleNeed(parseInt(this.getAttribute('data-need-id'))); });
+            });
+            document.querySelectorAll('.btn-delete-need').forEach(btn => {
+                btn.addEventListener('click', function() { deleteNeed(parseInt(this.getAttribute('data-need-id'))); });
+            });
+        }
+
+        // ==================== UTILITIES ====================
+        function closeModal(id) { 
+            const el = document.getElementById(id); 
+            if (el) el.classList.add('hidden'); 
+        }
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+            if (!toast || !icon || !msg) return;
+            msg.textContent = message;
+            if (type === 'error') icon.className = 'fas fa-exclamation-circle text-red-400';
+            else if (type === 'info') icon.className = 'fas fa-info-circle text-blue-400';
+            else icon.className = 'fas fa-check-circle text-green-400';
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Close modals on backdrop click
+        document.querySelectorAll('[id$="Modal"]').forEach(m => {
+            m.addEventListener('click', (e) => { if (e.target === m) closeModal(m.id); });
+        });
+
+        // Button event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load local first
+            store = loadLocalStore();
+            renderInventory();
+            renderNeeds();
+            updateInventoryValue();
+
+            // Then try Firebase
+            initFirebaseListeners();
+
+            document.getElementById('btnAddProduct').addEventListener('click', openAddProductModal);
+            document.getElementById('btnCloseAddProduct').addEventListener('click', () => closeModal('addProductModal'));
+            document.getElementById('btnSaveProduct').addEventListener('click', saveNewProduct);
+            document.getElementById('btnCloseEditProduct').addEventListener('click', () => closeModal('editProductModal'));
+            document.getElementById('btnSaveEdit').addEventListener('click', saveEditProduct);
+            document.getElementById('inventorySearch').addEventListener('input', filterInventory);
+            document.getElementById('btnAddNeed').addEventListener('click', addNeed);
+            document.getElementById('needInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addNeed();
+            });
+        });
+    </script>
+</body>
+</html>

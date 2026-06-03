@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ZOOM CLEAN Pro">
+    <meta name="theme-color" content="#dc2626">
+    <title>الديون - ZOOM CLEAN Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='48' fill='%23dc2626'/%3E%3Ctext x='96' y='110' font-family='Arial' font-size='80' font-weight='bold' text-anchor='middle' fill='white'%3EZ%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; overflow-x: hidden; overscroll-behavior-y: none; }
+        .glass { background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.5); }
+        .glass-dark { background: rgba(15,23,42,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+        .card-shadow { box-shadow: 0 4px 24px -4px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); }
+        .hover-lift { transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s; }
+        .hover-lift:active { transform: scale(0.97); }
+        .neon-glow-red { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .input-no-zoom { font-size: 16px; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .bottom-nav-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .nav-active { color: #dc2626 !important; }
+        .nav-active div { background: rgba(220,38,38,0.15) !important; }
+        .syncing { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .safe-top { padding-top: env(safe-area-inset-top, 0); }
+        .btn-touch { min-height: 44px; min-width: 44px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+        .btn-touch:active { transform: scale(0.95); opacity: 0.9; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Install Banner -->
+    <div id="installBanner" class="hidden fixed top-0 left-0 right-0 z-[80] bg-red-600 text-white px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-download"></i>
+            <span class="text-sm font-bold">ثبت التطبيق على شاشتك الرئيسية</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btnInstall" class="bg-white text-red-600 px-4 py-1.5 rounded-xl text-sm font-bold btn-touch">تثبيت</button>
+            <button id="btnDismissInstall" class="text-white/80 px-2 btn-touch"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass px-4 py-3 lg:px-8 safe-top">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg">
+                    <i class="fas fa-hand-holding-usd text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-800 leading-tight">سجل الديون</h1>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-slate-500 font-medium">إدارة العملاء والمدفوعات</p>
+                        <span id="syncStatus" class="text-[10px] text-green-500 font-bold hidden"><i class="fas fa-wifi"></i> متصل</span>
+                        <span id="offlineStatus" class="text-[10px] text-orange-500 font-bold hidden"><i class="fas fa-wifi-slash"></i> غير متصل</span>
+                    </div>
+                </div>
+            </div>
+            <button id="btnAddCustomer" class="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2.5 rounded-2xl font-bold text-sm hover-lift shadow-lg shadow-red-200 flex items-center gap-2 btn-touch">
+                <i class="fas fa-user-plus"></i> عميل جديد
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-4 lg:p-8 pb-32 lg:pb-8 max-w-6xl mx-auto space-y-4">
+
+        <!-- Global Debt Card -->
+        <div class="glass-dark rounded-[2rem] p-5 lg:p-6 card-shadow border border-red-500/20 neon-glow-red">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                <span class="text-[10px] font-bold text-red-400 uppercase tracking-wider">إجمالي الديون المستحقة</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span id="globalDebt" class="text-4xl lg:text-5xl font-black text-red-400">0</span>
+                <span class="text-sm font-bold text-red-500">ج.م</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">مجموع ما يُدينه جميع العملاء</p>
+        </div>
+
+        <!-- Search -->
+        <div class="glass rounded-[2rem] p-4 card-shadow">
+            <div class="relative">
+                <input type="text" id="debtorSearch" 
+                    class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 pr-12 text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all input-no-zoom"
+                    placeholder="ابحث عن عميل...">
+                <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none"></i>
+            </div>
+        </div>
+
+        <!-- Debtors List -->
+        <div class="glass rounded-[2rem] p-4 lg:p-6 card-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-users text-red-500"></i> قائمة العملاء
+                </h2>
+                <span id="debtorsCount" class="bg-red-100 text-red-700 px-2.5 py-1 rounded-xl text-xs font-bold">0</span>
+            </div>
+            <div id="debtorsList" class="space-y-3 max-h-[60vh] overflow-y-auto scrollbar-hide">
+                <!-- Dynamic -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 glass bottom-nav-safe px-6 py-3 border-t border-slate-200/50">
+        <div class="flex items-center justify-around max-w-lg mx-auto">
+            <a href="pos.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="pos">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-shopping-cart text-lg"></i></div>
+                <span class="text-[10px] font-bold">البيع</span>
+            </a>
+            <a href="inventory.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="inventory">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-boxes text-lg"></i></div>
+                <span class="text-[10px] font-bold">المخزون</span>
+            </a>
+            <a href="debt.html" class="nav-item flex flex-col items-center gap-1 nav-active btn-touch" data-nav="debt">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-hand-holding-usd text-lg"></i></div>
+                <span class="text-[10px] font-bold">الديون</span>
+            </a>
+            <a href="finance.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="finance">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-chart-line text-lg"></i></div>
+                <span class="text-[10px] font-bold">المالية</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Add Customer Modal -->
+    <div id="addCustomerModal" class="hidden fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white w-full lg:w-[420px] lg:rounded-[2rem] rounded-t-[2rem] p-6 animate-slide-up shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-bold text-lg text-slate-800">إضافة عميل جديد</h3>
+                <button id="btnCloseAddCustomer" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 btn-touch"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">اسم العميل</label>
+                    <input type="text" id="newCustomerName" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-red-500 transition input-no-zoom" placeholder="مثال: أحمد محمد">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">رقم الهاتف (اختياري)</label>
+                    <input type="text" id="newCustomerPhone" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-red-500 transition input-no-zoom" placeholder="01xxxxxxxx">
+                </div>
+                <button id="btnSaveCustomer" class="w-full bg-gradient-to-r from-red-600 to-red-700 text-white font-bold py-4 rounded-2xl shadow-lg hover-lift transition mt-2 btn-touch">
+                    <i class="fas fa-user-plus mr-2"></i> إضافة العميل
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debt Transaction Modal -->
+    <div id="debtModal" class="hidden fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white w-full lg:w-[420px] lg:rounded-[2rem] rounded-t-[2rem] p-6 animate-slide-up shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="debtModalTitle" class="font-bold text-lg text-slate-800">تسجيل دين</h3>
+                <button id="btnCloseDebtModal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 btn-touch"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">العميل</label>
+                    <select id="debtCustomer" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-red-500 transition input-no-zoom"></select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">المبلغ (ج.م)</label>
+                    <input type="number" id="debtAmount" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-red-500 transition input-no-zoom" placeholder="0">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">الوصف / السبب</label>
+                    <input type="text" id="debtDesc" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-red-500 transition input-no-zoom" placeholder="مثال: زجاجة كلور">
+                </div>
+                <button id="btnDebtAction" class="w-full font-bold py-4 rounded-2xl shadow-lg hover-lift transition mt-2 btn-touch"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer History Modal -->
+    <div id="historyModal" class="hidden fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white w-full lg:w-[500px] lg:rounded-[2rem] rounded-t-[2rem] p-6 animate-slide-up shadow-2xl max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 id="historyCustomerName" class="font-bold text-lg text-slate-800">--</h3>
+                    <p id="historyCustomerBalance" class="text-sm font-bold">--</p>
+                </div>
+                <button id="btnCloseHistory" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 btn-touch"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="historyList" class="flex-1 overflow-y-auto scrollbar-hide space-y-2">
+                <!-- Dynamic -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-[70] bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 animate-fade-in">
+        <i id="toastIcon" class="fas fa-check-circle text-green-400"></i>
+        <span id="toastMessage">تم بنجاح!</span>
+    </div>
+
+    <!-- PWA Scripts -->
+    <script>
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            setTimeout(() => {
+                if (!localStorage.getItem('pwa_dismissed')) {
+                    document.getElementById('installBanner').classList.remove('hidden');
+                }
+            }, 3000);
+        });
+        document.getElementById('btnInstall').addEventListener('click', function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') showToast('تم تثبيت التطبيق!');
+                    deferredPrompt = null;
+                    document.getElementById('installBanner').classList.add('hidden');
+                });
+            } else {
+                showToast('اضغط على زر المشاركة ثم "إضافة إلى الشاشة الرئيسية"', 'info');
+            }
+        });
+        document.getElementById('btnDismissInstall').addEventListener('click', function() {
+            localStorage.setItem('pwa_dismissed', 'true');
+            document.getElementById('installBanner').classList.add('hidden');
+        });
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then((reg) => console.log('SW registered:', reg.scope))
+                    .catch((err) => console.log('SW failed:', err));
+            });
+        }
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = this.getAttribute('href');
+            });
+        });
+    </script>
+
+    <!-- Firebase SDK v10.7.1 Module -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, get, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCArpnKK4qsM8B3ds5iW-JAYb_DWml_xUk",
+            authDomain: "zoomclean-144b6.firebaseapp.com",
+            databaseURL: "https://zoomclean-144b6-default-rtdb.firebaseio.com",
+            projectId: "zoomclean-144b6",
+            storageBucket: "zoomclean-144b6.firebasestorage.app",
+            messagingSenderId: "521673315417",
+            appId: "1:521673315417:web:90ec0cc4eb19295b048d48",
+            measurementId: "G-HG01XQTFEV"
+        };
+
+        let app, db;
+        let firebaseConnected = false;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            console.log('Firebase initialized successfully');
+        } catch (err) {
+            console.error('Firebase init error:', err);
+            showToast('خطأ في الاتصال بـ Firebase', 'error');
+        }
+
+        // ==================== DATA STORE ====================
+        let store = { products: [], cart: [], expenses: [], needs: [], debtors: [], dailySales: 0, dailyExpenses: 0 };
+
+        function loadLocalStore() {
+            const saved = localStorage.getItem('zoomclean_store');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.expenses) data.expenses.forEach(e => { if (e.date) e.date = new Date(e.date); });
+                    if (data.debtors) data.debtors.forEach(d => { 
+                        if (d.history) d.history.forEach(h => { if (h.date) h.date = new Date(h.date); }); 
+                    });
+                    return data;
+                } catch (e) { console.error('LocalStorage parse error:', e); }
+            }
+            return {
+                products: [
+                    { id: 1, name: "كلوركس 1 لتر", barcode: "1234567890123", price: 25, stock: 45 },
+                    { id: 2, name: "صابون لوكس 125g", barcode: "1234567890124", price: 12, stock: 120 },
+                    { id: 3, name: "منظف زجاج 500ml", barcode: "1234567890125", price: 18, stock: 30 },
+                    { id: 4, name: "معطر جو", barcode: "1234567890126", price: 35, stock: 22 },
+                    { id: 5, name: "مسحوق غسيل 2kg", barcode: "1234567890127", price: 85, stock: 15 },
+                    { id: 6, name: "سائل جلي 1 لتر", barcode: "1234567890128", price: 22, stock: 50 },
+                    { id: 7, name: "ورق تواليت", barcode: "1234567890129", price: 45, stock: 60 },
+                    { id: 8, name: "منظف أرضيات", barcode: "1234567890130", price: 28, stock: 40 },
+                ],
+                cart: [], expenses: [], needs: [], debtors: [], dailySales: 0, dailyExpenses: 0,
+            };
+        }
+
+        function saveLocalStore() { 
+            try {
+                localStorage.setItem('zoomclean_store', JSON.stringify(store)); 
+            } catch (e) { console.error('LocalStorage save error:', e); }
+        }
+
+        // ==================== FIREBASE SYNC ====================
+        function syncToFirebase() {
+            if (!db || !firebaseConnected) {
+                console.log('Firebase not connected, saving locally only');
+                saveLocalStore();
+                return;
+            }
+            const data = {
+                products: store.products,
+                expenses: store.expenses,
+                needs: store.needs,
+                debtors: store.debtors,
+                dailySales: store.dailySales,
+                dailyExpenses: store.dailyExpenses,
+                lastUpdated: new Date().toISOString()
+            };
+            set(ref(db, 'zoomclean'), data)
+                .then(() => { console.log('Synced to Firebase'); showSyncStatus(); })
+                .catch(err => { 
+                    console.error('Sync error:', err); 
+                    saveLocalStore();
+                    showOfflineStatus();
+                });
+        }
+
+        function showSyncStatus() {
+            const status = document.getElementById('syncStatus');
+            const offline = document.getElementById('offlineStatus');
+            if (status) {
+                status.classList.remove('hidden');
+                status.classList.add('syncing');
+                setTimeout(() => status.classList.remove('syncing'), 2000);
+            }
+            if (offline) offline.classList.add('hidden');
+            firebaseConnected = true;
+        }
+
+        function showOfflineStatus() {
+            const status = document.getElementById('syncStatus');
+            const offline = document.getElementById('offlineStatus');
+            if (status) status.classList.add('hidden');
+            if (offline) offline.classList.remove('hidden');
+            firebaseConnected = false;
+        }
+
+        function initFirebaseListeners() {
+            if (!db) {
+                console.log('No Firebase DB, using local only');
+                store = loadLocalStore();
+                renderDebtors();
+                showOfflineStatus();
+                return;
+            }
+
+            // Test connection
+            const connectedRef = ref(db, '.info/connected');
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    console.log('Firebase connected');
+                    showSyncStatus();
+                } else {
+                    console.log('Firebase disconnected');
+                    showOfflineStatus();
+                }
+            });
+
+            onValue(ref(db, 'zoomclean/debtors'), (snapshot) => {
+                if (snapshot.exists()) {
+                    store.debtors = snapshot.val();
+                    store.debtors.forEach(d => { if (d.history) d.history.forEach(h => { if (h.date) h.date = new Date(h.date); }); });
+                    renderDebtors(); showSyncStatus();
+                }
+            }, (error) => {
+                console.error('Debtors listener error:', error);
+                showOfflineStatus();
+            });
+
+            onValue(ref(db, 'zoomclean/dailySales'), (snapshot) => {
+                if (snapshot.exists()) store.dailySales = snapshot.val();
+            });
+
+            get(ref(db, 'zoomclean')).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    store.debtors = data.debtors || [];
+                    store.products = data.products || store.products;
+                    store.expenses = data.expenses || [];
+                    store.needs = data.needs || [];
+                    store.dailySales = data.dailySales || 0;
+                    store.dailyExpenses = data.dailyExpenses || 0;
+                    store.debtors.forEach(d => { if (d.history) d.history.forEach(h => { if (h.date) h.date = new Date(h.date); }); });
+                    store.expenses.forEach(e => { if (e.date) e.date = new Date(e.date); });
+                    renderDebtors(); showSyncStatus();
+                } else {
+                    store = loadLocalStore();
+                    syncToFirebase();
+                    renderDebtors();
+                }
+            }).catch(() => {
+                store = loadLocalStore();
+                renderDebtors();
+                showOfflineStatus();
+                showToast('وضع عدم الاتصال - البيانات محلية', 'info');
+            });
+        }
+
+        let currentDebtType = 'add';
+
+        // ==================== RENDER DEBTORS ====================
+        function renderDebtors() {
+            const container = document.getElementById('debtorsList');
+            const globalDebtEl = document.getElementById('globalDebt');
+            const globalDebt = store.debtors.reduce((sum, d) => sum + d.balance, 0);
+            if (globalDebtEl) globalDebtEl.textContent = globalDebt.toLocaleString();
+
+            const searchQuery = document.getElementById('debtorSearch')?.value?.toLowerCase() || '';
+            const filtered = store.debtors.filter(d => d.name.toLowerCase().includes(searchQuery));
+            const count = document.getElementById('debtorsCount');
+            if (count) count.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fas fa-users text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm font-bold mb-1">لا يوجد عملاء مسجلين</p>
+                        <p class="text-xs">أضف عميلاً جديداً من الزر أعلاه</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(d => {
+                const hasDebt = d.balance > 0;
+                return `
+                    <div class="debtor-card bg-white rounded-2xl p-4 card-shadow border border-slate-100 animate-fade-in" data-customer-id="${d.id}">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full ${hasDebt ? 'bg-red-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-user ${hasDebt ? 'text-red-500' : 'text-green-500'} text-lg"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-800 text-base">${d.name}</p>
+                                    <p class="text-[10px] text-slate-400">${d.phone || 'لا يوجد رقم'} · ${d.history.length} عملية</p>
+                                </div>
+                            </div>
+                            <div class="text-left">
+                                <p class="font-black ${hasDebt ? 'text-red-500' : 'text-green-600'} text-2xl">${d.balance}</p>
+                                <p class="text-[10px] text-slate-400">ج.م</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-add-debt flex-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl py-2.5 text-sm font-bold transition flex items-center justify-center gap-1.5 btn-touch" data-customer-id="${d.id}">
+                                <i class="fas fa-plus"></i> إضافة دين
+                            </button>
+                            <button class="btn-pay-debt flex-1 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl py-2.5 text-sm font-bold transition flex items-center justify-center gap-1.5 btn-touch" data-customer-id="${d.id}">
+                                <i class="fas fa-minus"></i> تسجيل سداد
+                            </button>
+                            <button class="btn-history px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl py-2.5 text-sm font-bold transition btn-touch" data-customer-id="${d.id}">
+                                <i class="fas fa-history"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Attach event listeners
+            document.querySelectorAll('.btn-add-debt').forEach(btn => {
+                btn.addEventListener('click', function() { quickAddDebt(parseInt(this.getAttribute('data-customer-id'))); });
+            });
+            document.querySelectorAll('.btn-pay-debt').forEach(btn => {
+                btn.addEventListener('click', function() { quickPayDebt(parseInt(this.getAttribute('data-customer-id'))); });
+            });
+            document.querySelectorAll('.btn-history').forEach(btn => {
+                btn.addEventListener('click', function() { showCustomerHistory(parseInt(this.getAttribute('data-customer-id'))); });
+            });
+        }
+
+        function filterDebtors() { renderDebtors(); }
+
+        // ==================== ADD CUSTOMER ====================
+        function openAddCustomerModal() {
+            document.getElementById('addCustomerModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('newCustomerName').focus(), 300);
+        }
+        function saveNewCustomer() {
+            const name = document.getElementById('newCustomerName').value.trim();
+            const phone = document.getElementById('newCustomerPhone').value.trim();
+            if (!name) { showToast('أدخل اسم العميل!', 'error'); return; }
+            const newId = store.debtors.length > 0 ? Math.max(...store.debtors.map(d => d.id)) + 1 : 1;
+            store.debtors.push({ id: newId, name, phone, balance: 0, history: [] });
+            document.getElementById('newCustomerName').value = '';
+            document.getElementById('newCustomerPhone').value = '';
+            closeModal('addCustomerModal');
+            renderDebtors(); saveLocalStore(); syncToFirebase();
+            showToast(`تم إضافة العميل: ${name}`);
+        }
+
+        // ==================== DEBT TRANSACTIONS ====================
+        function quickAddDebt(customerId) {
+            currentDebtType = 'add';
+            document.getElementById('debtModalTitle').textContent = 'إضافة دين جديد';
+            document.getElementById('btnDebtAction').className = 'w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 hover-lift transition mt-2 btn-touch';
+            document.getElementById('btnDebtAction').innerHTML = '<i class="fas fa-plus-circle mr-2"></i> إضافة دين';
+            populateDebtCustomerSelect(customerId);
+            document.getElementById('debtModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('debtAmount').focus(), 300);
+        }
+        function quickPayDebt(customerId) {
+            currentDebtType = 'pay';
+            document.getElementById('debtModalTitle').textContent = 'تسجيل سداد دين';
+            document.getElementById('btnDebtAction').className = 'w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-200 hover-lift transition mt-2 btn-touch';
+            document.getElementById('btnDebtAction').innerHTML = '<i class="fas fa-check-circle mr-2"></i> تأكيد السداد';
+            populateDebtCustomerSelect(customerId);
+            document.getElementById('debtModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('debtAmount').focus(), 300);
+        }
+        function populateDebtCustomerSelect(preselectId = null) {
+            const select = document.getElementById('debtCustomer');
+            select.innerHTML = store.debtors.map(d => 
+                `<option value="${d.id}" ${preselectId == d.id ? 'selected' : ''}>${d.name} (${d.balance} ج.م)</option>`
+            ).join('');
+        }
+        function processDebtTransaction() {
+            const customerId = parseInt(document.getElementById('debtCustomer').value);
+            const amount = parseFloat(document.getElementById('debtAmount').value);
+            const desc = document.getElementById('debtDesc').value.trim();
+            if (!amount || amount <= 0) { showToast('أدخل مبلغ صحيح!', 'error'); return; }
+            const customer = store.debtors.find(d => d.id === customerId);
+            if (!customer) return;
+            if (currentDebtType === 'add') {
+                customer.balance += amount;
+                customer.history.push({ type: 'debt', amount, desc: desc || 'دين', date: new Date() });
+                showToast(`تم إضافة دين: ${amount} ج.م لـ ${customer.name}`);
+            } else {
+                if (amount > customer.balance) { showToast('المبلغ أكبر من الدين!', 'error'); return; }
+                customer.balance -= amount;
+                customer.history.push({ type: 'payment', amount, desc: desc || 'سداد', date: new Date() });
+                store.dailySales += amount;
+                saveLocalStore(); syncToFirebase();
+                showToast(`تم سداد: ${amount} ج.م من ${customer.name}`);
+            }
+            document.getElementById('debtAmount').value = '';
+            document.getElementById('debtDesc').value = '';
+            closeModal('debtModal');
+            renderDebtors(); saveLocalStore(); syncToFirebase();
+        }
+
+        // ==================== HISTORY ====================
+        function showCustomerHistory(customerId) {
+            const customer = store.debtors.find(d => d.id === customerId);
+            if (!customer) return;
+            document.getElementById('historyCustomerName').textContent = customer.name;
+            document.getElementById('historyCustomerBalance').textContent = `الرصيد: ${customer.balance} ج.م`;
+            document.getElementById('historyCustomerBalance').className = `text-sm font-bold ${customer.balance > 0 ? 'text-red-500' : 'text-green-600'}`;
+            const list = document.getElementById('historyList');
+            if (customer.history.length === 0) {
+                list.innerHTML = `<div class="text-center py-8 text-slate-400"><i class="fas fa-history text-3xl mb-2 opacity-50"></i><p class="text-sm">لا توجد عمليات مسجلة</p></div>`;
+            } else {
+                list.innerHTML = [...customer.history].reverse().map(h => `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl ${h.type === 'debt' ? 'border-r-4 border-red-400' : 'border-r-4 border-green-400'}">
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">${h.desc}</p>
+                            <p class="text-[10px] text-slate-400">${new Date(h.date).toLocaleString('ar-EG')}</p>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-black ${h.type === 'debt' ? 'text-red-500' : 'text-green-600'} text-xl">${h.type === 'debt' ? '+' : '-'}${h.amount}</p>
+                            <p class="text-[10px] text-slate-400">ج.م</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+
+        // ==================== UTILITIES ====================
+        function closeModal(id) { 
+            const el = document.getElementById(id); 
+            if (el) el.classList.add('hidden'); 
+        }
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+            if (!toast || !icon || !msg) return;
+            msg.textContent = message;
+            if (type === 'error') icon.className = 'fas fa-exclamation-circle text-red-400';
+            else if (type === 'info') icon.className = 'fas fa-info-circle text-blue-400';
+            else icon.className = 'fas fa-check-circle text-green-400';
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Close modals on backdrop click
+        document.querySelectorAll('[id$="Modal"]').forEach(m => {
+            m.addEventListener('click', (e) => { if (e.target === m) closeModal(m.id); });
+        });
+
+        // Button event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load local first
+            store = loadLocalStore();
+            renderDebtors();
+
+            // Then try Firebase
+            initFirebaseListeners();
+
+            document.getElementById('btnAddCustomer').addEventListener('click', openAddCustomerModal);
+            document.getElementById('btnCloseAddCustomer').addEventListener('click', () => closeModal('addCustomerModal'));
+            document.getElementById('btnSaveCustomer').addEventListener('click', saveNewCustomer);
+            document.getElementById('btnCloseDebtModal').addEventListener('click', () => closeModal('debtModal'));
+            document.getElementById('btnDebtAction').addEventListener('click', processDebtTransaction);
+            document.getElementById('btnCloseHistory').addEventListener('click', () => closeModal('historyModal'));
+            document.getElementById('debtorSearch').addEventListener('input', filterDebtors);
+        });
+    </script>
+</body>
+</html>

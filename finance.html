@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ZOOM CLEAN Pro">
+    <meta name="theme-color" content="#2563eb">
+    <title>المالية - ZOOM CLEAN Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='48' fill='%232563eb'/%3E%3Ctext x='96' y='110' font-family='Arial' font-size='80' font-weight='bold' text-anchor='middle' fill='white'%3EZ%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; overflow-x: hidden; overscroll-behavior-y: none; }
+        .glass { background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.5); }
+        .card-shadow { box-shadow: 0 4px 24px -4px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); }
+        .hover-lift { transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s; }
+        .hover-lift:active { transform: scale(0.97); }
+        .neon-glow-green { box-shadow: 0 0 20px rgba(74,222,128,0.3); }
+        .neon-glow-red { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .input-no-zoom { font-size: 16px; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .bottom-nav-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .nav-active { color: #2563eb !important; }
+        .nav-active div { background: rgba(37,99,235,0.15) !important; }
+        .syncing { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .safe-top { padding-top: env(safe-area-inset-top, 0); }
+        .btn-touch { min-height: 44px; min-width: 44px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+        .btn-touch:active { transform: scale(0.95); opacity: 0.9; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Install Banner -->
+    <div id="installBanner" class="hidden fixed top-0 left-0 right-0 z-[80] bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-download"></i>
+            <span class="text-sm font-bold">ثبت التطبيق على شاشتك الرئيسية</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btnInstall" class="bg-white text-blue-600 px-4 py-1.5 rounded-xl text-sm font-bold btn-touch">تثبيت</button>
+            <button id="btnDismissInstall" class="text-white/80 px-2 btn-touch"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass px-4 py-3 lg:px-8 safe-top">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chart-line text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-800 leading-tight">المالية</h1>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-slate-500 font-medium">التليمتري والمصروفات</p>
+                        <span id="syncStatus" class="text-[10px] text-green-500 font-bold hidden"><i class="fas fa-wifi"></i> متصل</span>
+                        <span id="offlineStatus" class="text-[10px] text-orange-500 font-bold hidden"><i class="fas fa-wifi-slash"></i> غير متصل</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btnResetDay" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-2xl font-bold text-sm transition flex items-center gap-2 btn-touch">
+                    <i class="fas fa-redo"></i> يوم جديد
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-4 lg:p-8 pb-32 lg:pb-8 max-w-6xl mx-auto space-y-4">
+
+        <!-- Triple Telemetry Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
+            <div class="glass rounded-[1.5rem] p-4 lg:p-5 card-shadow hover-lift relative overflow-hidden btn-touch">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-green-400/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div class="relative">
+                    <div class="flex items-center gap-1.5 mb-2">
+                        <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                        <span class="text-[10px] lg:text-xs font-bold text-slate-400 uppercase">المبيعات اليوم</span>
+                    </div>
+                    <p id="dailySales" class="text-2xl lg:text-3xl font-black text-slate-800">0</p>
+                    <p class="text-[10px] text-green-600 font-bold mt-0.5">ج.م</p>
+                </div>
+            </div>
+            <div class="glass rounded-[1.5rem] p-4 lg:p-5 card-shadow hover-lift relative overflow-hidden btn-touch">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-red-400/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div class="relative">
+                    <div class="flex items-center gap-1.5 mb-2">
+                        <div class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                        <span class="text-[10px] lg:text-xs font-bold text-slate-400 uppercase">المصروفات</span>
+                    </div>
+                    <p id="dailyExpenses" class="text-2xl lg:text-3xl font-black text-slate-800">0</p>
+                    <p class="text-[10px] text-red-500 font-bold mt-0.5">ج.م</p>
+                </div>
+            </div>
+            <div class="glass rounded-[1.5rem] p-4 lg:p-5 card-shadow hover-lift relative overflow-hidden border-2 border-green-400/20 neon-glow-green btn-touch">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-blue-400/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div class="relative">
+                    <div class="flex items-center gap-1.5 mb-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                        <span class="text-[10px] lg:text-xs font-bold text-slate-400 uppercase">الصندوق</span>
+                    </div>
+                    <p id="netCash" class="text-2xl lg:text-3xl font-black text-green-600">0</p>
+                    <p class="text-[10px] text-green-600 font-bold mt-0.5">ج.م</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Expense -->
+        <div class="glass rounded-[2rem] p-4 lg:p-6 card-shadow">
+            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm">
+                <i class="fas fa-wallet text-red-500"></i> تسجيل مصروف جديد
+            </h3>
+            <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+                <input type="text" id="expenseDesc" placeholder="وصف المصروف (مثال: كهرباء, إيجار...)" 
+                    class="flex-1 min-w-[200px] bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition input-no-zoom">
+                <input type="number" id="expenseAmount" placeholder="المبلغ" 
+                    class="w-32 bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition input-no-zoom">
+                <button id="btnAddExpense" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl px-6 py-3 font-bold text-sm hover-lift transition shadow-lg shadow-red-200 whitespace-nowrap btn-touch">
+                    <i class="fas fa-minus mr-1"></i> خصم
+                </button>
+            </div>
+        </div>
+
+        <!-- Expenses History -->
+        <div class="glass rounded-[2rem] p-4 lg:p-6 card-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                    <i class="fas fa-receipt text-slate-500"></i> سجل المصروفات
+                </h3>
+                <span id="expensesCount" class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl text-xs font-bold">0</span>
+            </div>
+            <div id="expensesList" class="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
+                <!-- Dynamic -->
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="glass rounded-[1.5rem] p-4 card-shadow btn-touch">
+                <div class="flex items-center gap-2 mb-1">
+                    <i class="fas fa-shopping-bag text-blue-500 text-sm"></i>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">عدد المبيعات</span>
+                </div>
+                <p id="salesCount" class="text-xl font-black text-slate-800">0</p>
+            </div>
+            <div class="glass rounded-[1.5rem] p-4 card-shadow btn-touch">
+                <div class="flex items-center gap-2 mb-1">
+                    <i class="fas fa-receipt text-red-500 text-sm"></i>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">عدد المصروفات</span>
+                </div>
+                <p id="expensesCount2" class="text-xl font-black text-slate-800">0</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 glass bottom-nav-safe px-6 py-3 border-t border-slate-200/50">
+        <div class="flex items-center justify-around max-w-lg mx-auto">
+            <a href="pos.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="pos">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-shopping-cart text-lg"></i></div>
+                <span class="text-[10px] font-bold">البيع</span>
+            </a>
+            <a href="inventory.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="inventory">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-boxes text-lg"></i></div>
+                <span class="text-[10px] font-bold">المخزون</span>
+            </a>
+            <a href="debt.html" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition btn-touch" data-nav="debt">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-hand-holding-usd text-lg"></i></div>
+                <span class="text-[10px] font-bold">الديون</span>
+            </a>
+            <a href="finance.html" class="nav-item flex flex-col items-center gap-1 nav-active btn-touch" data-nav="finance">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center transition"><i class="fas fa-chart-line text-lg"></i></div>
+                <span class="text-[10px] font-bold">المالية</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-[70] bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 animate-fade-in">
+        <i id="toastIcon" class="fas fa-check-circle text-green-400"></i>
+        <span id="toastMessage">تم بنجاح!</span>
+    </div>
+
+    <!-- PWA Scripts -->
+    <script>
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            setTimeout(() => {
+                if (!localStorage.getItem('pwa_dismissed')) {
+                    document.getElementById('installBanner').classList.remove('hidden');
+                }
+            }, 3000);
+        });
+        document.getElementById('btnInstall').addEventListener('click', function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') showToast('تم تثبيت التطبيق!');
+                    deferredPrompt = null;
+                    document.getElementById('installBanner').classList.add('hidden');
+                });
+            } else {
+                showToast('اضغط على زر المشاركة ثم "إضافة إلى الشاشة الرئيسية"', 'info');
+            }
+        });
+        document.getElementById('btnDismissInstall').addEventListener('click', function() {
+            localStorage.setItem('pwa_dismissed', 'true');
+            document.getElementById('installBanner').classList.add('hidden');
+        });
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then((reg) => console.log('SW registered:', reg.scope))
+                    .catch((err) => console.log('SW failed:', err));
+            });
+        }
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = this.getAttribute('href');
+            });
+        });
+    </script>
+
+    <!-- Firebase SDK v10.7.1 Module -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, get, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCArpnKK4qsM8B3ds5iW-JAYb_DWml_xUk",
+            authDomain: "zoomclean-144b6.firebaseapp.com",
+            databaseURL: "https://zoomclean-144b6-default-rtdb.firebaseio.com",
+            projectId: "zoomclean-144b6",
+            storageBucket: "zoomclean-144b6.firebasestorage.app",
+            messagingSenderId: "521673315417",
+            appId: "1:521673315417:web:90ec0cc4eb19295b048d48",
+            measurementId: "G-HG01XQTFEV"
+        };
+
+        let app, db;
+        let firebaseConnected = false;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            console.log('Firebase initialized successfully');
+        } catch (err) {
+            console.error('Firebase init error:', err);
+            showToast('خطأ في الاتصال بـ Firebase', 'error');
+        }
+
+        // ==================== DATA STORE ====================
+        let store = { products: [], cart: [], expenses: [], needs: [], debtors: [], dailySales: 0, dailyExpenses: 0 };
+
+        function loadLocalStore() {
+            const saved = localStorage.getItem('zoomclean_store');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.expenses) data.expenses.forEach(e => { if (e.date) e.date = new Date(e.date); });
+                    if (data.debtors) data.debtors.forEach(d => { 
+                        if (d.history) d.history.forEach(h => { if (h.date) h.date = new Date(h.date); }); 
+                    });
+                    return data;
+                } catch (e) { console.error('LocalStorage parse error:', e); }
+            }
+            return {
+                products: [
+                    { id: 1, name: "كلوركس 1 لتر", barcode: "1234567890123", price: 25, stock: 45 },
+                    { id: 2, name: "صابون لوكس 125g", barcode: "1234567890124", price: 12, stock: 120 },
+                    { id: 3, name: "منظف زجاج 500ml", barcode: "1234567890125", price: 18, stock: 30 },
+                    { id: 4, name: "معطر جو", barcode: "1234567890126", price: 35, stock: 22 },
+                    { id: 5, name: "مسحوق غسيل 2kg", barcode: "1234567890127", price: 85, stock: 15 },
+                    { id: 6, name: "سائل جلي 1 لتر", barcode: "1234567890128", price: 22, stock: 50 },
+                    { id: 7, name: "ورق تواليت", barcode: "1234567890129", price: 45, stock: 60 },
+                    { id: 8, name: "منظف أرضيات", barcode: "1234567890130", price: 28, stock: 40 },
+                ],
+                cart: [], expenses: [], needs: [], debtors: [], dailySales: 0, dailyExpenses: 0,
+            };
+        }
+
+        function saveLocalStore() { 
+            try {
+                localStorage.setItem('zoomclean_store', JSON.stringify(store)); 
+            } catch (e) { console.error('LocalStorage save error:', e); }
+        }
+
+        // ==================== FIREBASE SYNC ====================
+        function syncToFirebase() {
+            if (!db || !firebaseConnected) {
+                console.log('Firebase not connected, saving locally only');
+                saveLocalStore();
+                return;
+            }
+            const data = {
+                products: store.products,
+                expenses: store.expenses,
+                needs: store.needs,
+                debtors: store.debtors,
+                dailySales: store.dailySales,
+                dailyExpenses: store.dailyExpenses,
+                lastUpdated: new Date().toISOString()
+            };
+            set(ref(db, 'zoomclean'), data)
+                .then(() => { console.log('Synced to Firebase'); showSyncStatus(); })
+                .catch(err => { 
+                    console.error('Sync error:', err); 
+                    saveLocalStore();
+                    showOfflineStatus();
+                });
+        }
+
+        function showSyncStatus() {
+            const status = document.getElementById('syncStatus');
+            const offline = document.getElementById('offlineStatus');
+            if (status) {
+                status.classList.remove('hidden');
+                status.classList.add('syncing');
+                setTimeout(() => status.classList.remove('syncing'), 2000);
+            }
+            if (offline) offline.classList.add('hidden');
+            firebaseConnected = true;
+        }
+
+        function showOfflineStatus() {
+            const status = document.getElementById('syncStatus');
+            const offline = document.getElementById('offlineStatus');
+            if (status) status.classList.add('hidden');
+            if (offline) offline.classList.remove('hidden');
+            firebaseConnected = false;
+        }
+
+        function initFirebaseListeners() {
+            if (!db) {
+                console.log('No Firebase DB, using local only');
+                store = loadLocalStore();
+                updateTelemetry();
+                renderExpenses();
+                showOfflineStatus();
+                return;
+            }
+
+            // Test connection
+            const connectedRef = ref(db, '.info/connected');
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    console.log('Firebase connected');
+                    showSyncStatus();
+                } else {
+                    console.log('Firebase disconnected');
+                    showOfflineStatus();
+                }
+            });
+
+            onValue(ref(db, 'zoomclean/dailySales'), (snapshot) => {
+                if (snapshot.exists()) { store.dailySales = snapshot.val(); updateTelemetry(); showSyncStatus(); }
+            }, (error) => { console.error('dailySales error:', error); });
+
+            onValue(ref(db, 'zoomclean/dailyExpenses'), (snapshot) => {
+                if (snapshot.exists()) { store.dailyExpenses = snapshot.val(); updateTelemetry(); showSyncStatus(); }
+            }, (error) => { console.error('dailyExpenses error:', error); });
+
+            onValue(ref(db, 'zoomclean/expenses'), (snapshot) => {
+                if (snapshot.exists()) {
+                    store.expenses = snapshot.val();
+                    store.expenses.forEach(e => { if (e.date) e.date = new Date(e.date); });
+                    renderExpenses(); showSyncStatus();
+                }
+            }, (error) => { console.error('expenses error:', error); });
+
+            get(ref(db, 'zoomclean')).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    store.dailySales = data.dailySales || 0;
+                    store.dailyExpenses = data.dailyExpenses || 0;
+                    store.expenses = data.expenses || [];
+                    store.products = data.products || store.products;
+                    store.debtors = data.debtors || [];
+                    store.needs = data.needs || [];
+                    store.expenses.forEach(e => { if (e.date) e.date = new Date(e.date); });
+                    store.debtors.forEach(d => { if (d.history) d.history.forEach(h => { if (h.date) h.date = new Date(h.date); }); });
+                    updateTelemetry(); renderExpenses(); showSyncStatus();
+                } else {
+                    store = loadLocalStore();
+                    syncToFirebase();
+                    updateTelemetry(); renderExpenses();
+                }
+            }).catch((err) => {
+                console.error('Firebase get error:', err);
+                store = loadLocalStore();
+                updateTelemetry(); renderExpenses();
+                showOfflineStatus();
+                showToast('وضع عدم الاتصال - البيانات محلية', 'info');
+            });
+        }
+
+        // ==================== TELEMETRY ====================
+        function updateTelemetry() {
+            const dailySalesEl = document.getElementById('dailySales');
+            const dailyExpensesEl = document.getElementById('dailyExpenses');
+            const netCashEl = document.getElementById('netCash');
+            const salesCountEl = document.getElementById('salesCount');
+            const expensesCount2El = document.getElementById('expensesCount2');
+
+            if (dailySalesEl) dailySalesEl.textContent = store.dailySales.toLocaleString();
+            if (dailyExpensesEl) dailyExpensesEl.textContent = store.dailyExpenses.toLocaleString();
+            if (netCashEl) netCashEl.textContent = (store.dailySales - store.dailyExpenses).toLocaleString();
+            if (salesCountEl) salesCountEl.textContent = store.dailySales > 0 ? '✓' : '0';
+            if (expensesCount2El) expensesCount2El.textContent = store.expenses.length;
+        }
+
+        // ==================== EXPENSES ====================
+        function addExpense() {
+            const descEl = document.getElementById('expenseDesc');
+            const amountEl = document.getElementById('expenseAmount');
+            const desc = descEl.value.trim();
+            const amount = parseFloat(amountEl.value);
+            if (!desc || !amount || amount <= 0) { showToast('أدخل وصف ومبلغ صحيح!', 'error'); return; }
+            store.expenses.push({ desc, amount, date: new Date() });
+            store.dailyExpenses += amount;
+            descEl.value = '';
+            amountEl.value = '';
+            updateTelemetry(); renderExpenses(); saveLocalStore(); syncToFirebase();
+            showToast(`تم تسجيل مصروف: ${amount} ج.م`);
+        }
+
+        function renderExpenses() {
+            const container = document.getElementById('expensesList');
+            const count = document.getElementById('expensesCount');
+            if (count) count.textContent = store.expenses.length;
+            if (store.expenses.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-400"><i class="fas fa-receipt text-3xl mb-2 opacity-50"></i><p class="text-sm">لا توجد مصروفات مسجلة</p></div>`;
+                return;
+            }
+            container.innerHTML = [...store.expenses].reverse().map(e => `
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl card-shadow border border-slate-100 animate-fade-in">
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">${e.desc}</p>
+                        <p class="text-[10px] text-slate-400">${new Date(e.date).toLocaleString('ar-EG')}</p>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-bold text-red-500 text-lg">-${e.amount}</p>
+                        <p class="text-[10px] text-slate-400">ج.م</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==================== RESET DAY ====================
+        function resetDay() {
+            if (!confirm('هل أنت متأكد من بدء يوم جديد؟ سيتم تصفير المبيعات والمصروفات.')) return;
+            store.dailySales = 0;
+            store.dailyExpenses = 0;
+            store.expenses = [];
+            updateTelemetry();
+            renderExpenses();
+            saveLocalStore();
+            syncToFirebase();
+            showToast('تم بدء يوم جديد!');
+        }
+
+        // ==================== UTILITIES ====================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+            if (!toast || !icon || !msg) return;
+            msg.textContent = message;
+            if (type === 'error') icon.className = 'fas fa-exclamation-circle text-red-400';
+            else if (type === 'info') icon.className = 'fas fa-info-circle text-blue-400';
+            else icon.className = 'fas fa-check-circle text-green-400';
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Button event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load local first for instant display
+            store = loadLocalStore();
+            updateTelemetry();
+            renderExpenses();
+
+            // Then try Firebase
+            initFirebaseListeners();
+
+            document.getElementById('btnAddExpense').addEventListener('click', addExpense);
+            document.getElementById('btnResetDay').addEventListener('click', resetDay);
+            document.getElementById('expenseAmount').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addExpense();
+            });
+        });
+    </script>
+</body>
+</html>
